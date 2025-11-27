@@ -1,0 +1,126 @@
+# ?? Quick Swagger JWT Setup (3 Steps)
+
+## Step 1: Login to Get Token
+
+Open Swagger: `http://localhost:5148/swagger`
+
+**POST /api/auth/login**
+```json
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
+
+**Copy this token from response:**
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## Step 2: Click "Authorize" Button
+
+Look for the **Authorize** button (lock icon ??) at the top right of Swagger UI.
+
+Click it, and you'll see:
+
+```
+?????????????????????????????????????????
+? Available authorizations          ?
+? ????????????????????????????????????? ?
+? ? Bearer (http, Bearer) ? ?
+? ?           ? ?
+? ? Value:   ? ?
+? ? ????????????????????????????????? ? ?
+? ? ? [Paste your token here]? ? ?  ? PASTE TOKEN HERE
+? ? ????????????????????????????????? ? ?
+? ?           ? ?
+? ?    [Authorize]  [Close]         ? ?  ? CLICK AUTHORIZE
+? ????????????????????????????????????? ?
+?????????????????????????????????????????
+```
+
+**Important:** Just paste the token, don't add "Bearer" prefix!
+
+## Step 3: Test Protected Endpoints
+
+Now you can test endpoints with the ?? lock icon:
+
+? **GET /api/test/protected** - Will return user info  
+? **GET /api/test/admin** - Will work if you have Admin role
+
+## Visual Flow
+
+```
+1. ?? Register          ?  No token
+   POST /api/auth/register
+
+2. ?? Login        ?  Get token
+   POST /api/auth/login
+   
+3. ?? Authorize    ?  Paste token
+   Click "Authorize" button
+   
+4. ?? Test Protected    ?  Access granted
+   GET /api/test/protected
+```
+
+## Common Scenarios
+
+### Scenario A: First Time User
+```
+1. POST /api/auth/register  ? Create account
+2. POST /api/auth/login     ? Get token
+3. Click "Authorize"  ? Paste token
+4. GET /api/test/protected   ? Test protected endpoint
+```
+
+### Scenario B: Token Expired
+```
+1. Try protected endpoint    ? 401 Unauthorized
+2. POST /api/auth/refresh    ? Get new token (or login again)
+3. Click "Authorize" ??      ? Update token
+4. Try again            ? Success
+```
+
+### Scenario C: Logout
+```
+1. Click "Authorize" ??
+2. Click "Logout"
+3. Click "Close"
+4. POST /api/auth/logout/1   ? Clear server-side tokens
+```
+
+## Quick Reference
+
+| Action | Button Location | What to Click |
+|--------|----------------|---------------|
+| Authorize | Top right corner | Green "Authorize" button |
+| Logout | In Authorize popup | "Logout" button |
+| Re-authorize | Top right corner | Green "Authorize" button again |
+
+## Token Formats
+
+### ? Wrong (don't include "Bearer"):
+```
+Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### ? Correct (just the token):
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+## Need Help?
+
+- **401 Unauthorized**: Token expired or not authorized
+  - Solution: Login again and re-authorize
+
+- **403 Forbidden**: Don't have required role
+  - Solution: Register with correct role or use different endpoint
+
+- **Can't find Authorize button**: Check top right corner
+  - Solution: Refresh page, button should appear
+
+---
+
+**That's it! You're ready to test your API with JWT in Swagger! ??**
