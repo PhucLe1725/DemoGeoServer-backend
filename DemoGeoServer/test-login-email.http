@@ -1,0 +1,84 @@
+@DemoGeoServer_HostAddress = http://localhost:5148
+
+### =============== QUICK LOGIN TESTS WITH EMAIL ===============
+
+### 1. ? Login with valid email (Admin)
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@demo.com",
+  "password": "password123"
+}
+
+###
+
+### 2. ? Login with valid email (User)
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "testuser@demo.com",
+  "password": "password123"
+}
+
+###
+
+### 3. ? Login with non-existent email
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "notexist@demo.com",
+  "password": "password123"
+}
+
+###
+
+### 4. ? Login with invalid email format
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "not-an-email",
+  "password": "password123"
+}
+
+###
+
+### 5. ? Login with wrong password
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@demo.com",
+  "password": "wrongpassword"
+}
+
+###
+
+### 6. ? Login with empty email
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "",
+  "password": "password123"
+}
+
+###
+
+### 7. ? Login with missing email field
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "password": "password123"
+}
+
+###
+
+### Expected Results:
+### Test 1-2: 200 OK with token
+### Test 3, 5: 401 Unauthorized - "Invalid email or password"
+### Test 4, 6, 7: 400 Bad Request - Validation error

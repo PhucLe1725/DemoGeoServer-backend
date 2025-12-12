@@ -22,7 +22,7 @@ namespace DemoGeoServer.Infrastructure.Repositories
         public async Task<User?> GetByUsernameAsync(string username)
         {
             return await _context.Users
-            .FirstOrDefaultAsync(u => u.Username == username);
+                .FirstOrDefaultAsync(u => u.Username == username);
         }
 
         public async Task<User?> GetByEmailAsync(string email)
@@ -60,7 +60,7 @@ namespace DemoGeoServer.Infrastructure.Repositories
         public async Task<bool> ExistsAsync(string username, string email)
         {
             return await _context.Users
-         .AnyAsync(u => u.Username == username || u.Email == email);
+                .AnyAsync(u => u.Username == username || u.Email == email);
         }
     }
 }

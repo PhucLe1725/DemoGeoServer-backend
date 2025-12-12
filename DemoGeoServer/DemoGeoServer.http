@@ -1,55 +1,19 @@
-@DemoGeoServer_HostAddress = http://localhost:5148
-@jwt_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-
-### =============== Authentication Endpoints ===============
-
-### Register new user (No token returned)
-POST {{DemoGeoServer_HostAddress}}/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "password123",
-  "email": "admin@demo.com",
-  "role": "Admin"
-}
-
-### Login (Returns token)
+### 3. Login as User - Copy token & refreshToken to variables above
 POST {{DemoGeoServer_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "username": "admin",
+  "email": "testuser@demo.com",
   "password": "password123"
 }
 
-### Refresh Token (replace with actual refresh token from login response)
-POST {{DemoGeoServer_HostAddress}}/api/auth/refresh
+###
+
+### 4. Login as Admin - Copy token & refreshToken to variables above
+POST {{DemoGeoServer_HostAddress}}/api/auth/login
 Content-Type: application/json
 
 {
-  "refreshToken": "YOUR_REFRESH_TOKEN_HERE"
+  "email": "admin@demo.com",
+  "password": "password123"
 }
-
-### Logout (replace userId with actual user id)
-POST {{DemoGeoServer_HostAddress}}/api/auth/logout/1
-
-### =============== Test Protected Endpoints ===============
-
-### Public endpoint (no auth required)
-GET {{DemoGeoServer_HostAddress}}/api/test/public
-
-### Protected endpoint (requires valid JWT)
-GET {{DemoGeoServer_HostAddress}}/api/test/protected
-Authorization: Bearer {{jwt_token}}
-
-### Admin endpoint (requires Admin role)
-GET {{DemoGeoServer_HostAddress}}/api/test/admin
-Authorization: Bearer {{jwt_token}}
-
-### =============== Other Endpoints ===============
-
-GET {{DemoGeoServer_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###

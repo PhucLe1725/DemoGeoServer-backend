@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace DemoGeoServer.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _authService;
@@ -34,6 +34,7 @@ namespace DemoGeoServer.Controllers
             if (!response.Success)
                 return Unauthorized(response);
 
+
             return Ok(response);
         }
 
@@ -48,10 +49,10 @@ namespace DemoGeoServer.Controllers
             return Ok(response);
         }
 
-        [HttpPost("logout/{userId}")]
-        public async Task<ActionResult> Logout(int userId)
+        [HttpPost("logout")]
+        public async Task<ActionResult> Logout([FromBody] RefreshTokenRequest request)
         {
-            var result = await _authService.LogoutAsync(userId);
+            var result = await _authService.LogoutAsync(request.RefreshToken);
 
             if (!result)
                 return BadRequest(new { message = "Logout failed" });

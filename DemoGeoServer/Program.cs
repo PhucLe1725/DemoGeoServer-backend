@@ -7,11 +7,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ? T?T claim type mapping - gi? claims nguyên g?c (sub, role)
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
 builder.Services.AddControllers();
 
 // Configure PostgreSQL Database
@@ -29,22 +33,20 @@ builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Swagger/OpenAPI configuration
 builder.Services.AddEndpointsApiExplorer();
-
-// Configure Swagger with JWT Authentication
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Version = "v1",
         Title = "DemoGeoServer API",
-        Description = "Authentication API with JWT Bearer tokens",
+        Description = "Authentication API with JWT Bearer tokens (minimal claims)",
         Contact = new OpenApiContact
         {
             Name = "DemoGeoServer Team"
         }
-    });
+ });
 
     // Add JWT Authentication
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -55,8 +57,8 @@ builder.Services.AddSwaggerGen(options =>
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
         Description = "JWT Authorization header using the Bearer scheme. \r\n\r\n" +
-                      "Enter your token in the text input below.\r\n\r\n" +
-                      "Example: \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
+     "Enter your token in the text input below.\r\n\r\n" +
+               "Example: \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\""
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -64,17 +66,18 @@ builder.Services.AddSwaggerGen(options =>
         {
             new OpenApiSecurityScheme
             {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
+    Reference = new OpenApiReference
+  {
+           Type = ReferenceType.SecurityScheme,
+         Id = "Bearer"
+        }
+       },
+    Array.Empty<string>()
         }
     });
 });
 
+// JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -92,13 +95,51 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuer = true,
         ValidateAudience = true,
         ValidateLifetime = true,
-        ValidateIssuerSigningKey = true
+        ValidateIssuerSigningKey = true,
+        RoleClaimType = ClaimTypes.Role,
+        NameClaimType = ClaimTypes.NameIdentifier
     };
+
+    // Add event to ensure role claim is properly mapped
+    options.Events = new JwtBearerEvents
+    {
+        OnTokenValidated = context =>
+        {
+            var claimsIdentity = context.Principal?.Identity as ClaimsIdentity;
+            if (claimsIdentity != null)
+            {
+                // Find any role claim (try both "role" and ClaimTypes.Role)
+                var roleClaim = claimsIdentity.FindFirst("role")
+                ?? claimsIdentity.FindFirst(ClaimTypes.Role);
+
+                // If role claim exists and ClaimTypes.Role is not already present, add it
+                if (roleClaim != null && !claimsIdentity.HasClaim(ClaimTypes.Role, roleClaim.Value))
+                {
+                    claimsIdentity.AddClaim(new Claim(ClaimTypes.Role, roleClaim.Value));
+                }
+            }
+
+            return Task.CompletedTask;
+        }
+    };
+});
+
+// Add Authorization
+builder.Services.AddAuthorization();
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.WithOrigins("http://localhost:5173")
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -106,9 +147,11 @@ if (app.Environment.IsDevelopment())
     {
         options.SwaggerEndpoint("/swagger/v1/swagger.json", "DemoGeoServer API v1");
         options.DocumentTitle = "DemoGeoServer API";
-        options.DefaultModelsExpandDepth(-1); // Hide schemas section
+        options.DefaultModelsExpandDepth(-1);
     });
 }
+
+app.UseCors();
 
 //app.UseHttpsRedirection();
 

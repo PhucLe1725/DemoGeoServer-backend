@@ -7,6 +7,6 @@ namespace DemoGeoServer.Application.Interfaces
         Task<RegisterResponse> RegisterAsync(RegisterRequest request);
         Task<LoginResponse> LoginAsync(LoginRequest request);
         Task<LoginResponse> RefreshTokenAsync(string refreshToken);
-        Task<bool> LogoutAsync(int userId);
+        Task<bool> LogoutAsync(string refreshToken);
     }
 }

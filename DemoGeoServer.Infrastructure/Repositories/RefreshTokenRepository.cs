@@ -17,7 +17,6 @@ namespace DemoGeoServer.Infrastructure.Repositories
         public async Task<RefreshToken?> GetByTokenAsync(string token)
         {
             return await _context.RefreshTokens
-                .Include(rt => rt.User)
                 .FirstOrDefaultAsync(rt => rt.Token == token);
         }
 
@@ -52,10 +51,36 @@ namespace DemoGeoServer.Infrastructure.Repositories
             return true;
         }
 
+        public async Task<bool> UpdateTimestampAsync(int tokenId)
+        {
+            var token = await _context.RefreshTokens.FindAsync(tokenId);
+            if (token == null)
+                return false;
+
+            token.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
         public async Task<RefreshToken> UpdateAsync(RefreshToken refreshToken)
         {
             refreshToken.UpdatedAt = DateTime.UtcNow;
-            _context.RefreshTokens.Update(refreshToken);
+
+            // Check if entity is already being tracked
+            var trackedEntity = _context.RefreshTokens.Local
+                .FirstOrDefault(e => e.Id == refreshToken.Id);
+
+            if (trackedEntity != null)
+            {
+                // Entity is already tracked, just update the timestamp
+                _context.Entry(trackedEntity).CurrentValues.SetValues(refreshToken);
+            }
+            else
+            {
+                // Entity is not tracked, attach and mark as modified
+                _context.RefreshTokens.Update(refreshToken);
+            }
+
             await _context.SaveChangesAsync();
             return refreshToken;
         }

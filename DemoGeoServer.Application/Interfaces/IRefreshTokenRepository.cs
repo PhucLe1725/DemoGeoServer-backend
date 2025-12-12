@@ -9,5 +9,6 @@ namespace DemoGeoServer.Application.Interfaces
         Task<bool> DeleteAsync(int id);
         Task<bool> DeleteByUserIdAsync(int userId);
         Task<RefreshToken> UpdateAsync(RefreshToken refreshToken);
+        Task<bool> UpdateTimestampAsync(int tokenId);
     }
 }

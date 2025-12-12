@@ -31,24 +31,24 @@ namespace DemoGeoServer.Infrastructure.Services
             try
             {
                 // Validate input
-                if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+                if (string.IsNullOrEmpty(request.Email) || string.IsNullOrEmpty(request.Password))
                 {
                     return new LoginResponse
                     {
                         Success = false,
-                        Message = "Username and password are required"
+                        Message = "Email and password are required"
                     };
                 }
 
-                // Get user from database
-                var user = await _userRepository.GetByUsernameAsync(request.Username);
+                // Get user from database by email
+                var user = await _userRepository.GetByEmailAsync(request.Email);
 
                 if (user == null)
                 {
                     return new LoginResponse
                     {
                         Success = false,
-                        Message = "Invalid username or password"
+                        Message = "Invalid email or password"
                     };
                 }
 
@@ -58,7 +58,7 @@ namespace DemoGeoServer.Infrastructure.Services
                     return new LoginResponse
                     {
                         Success = false,
-                        Message = "Invalid username or password"
+                        Message = "Invalid email or password"
                     };
                 }
 
@@ -102,7 +102,6 @@ namespace DemoGeoServer.Infrastructure.Services
         {
             try
             {
-                // Validate refresh token from database
                 var tokenEntity = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
 
                 if (tokenEntity == null || tokenEntity.ExpiryDate < DateTime.UtcNow)
@@ -114,7 +113,6 @@ namespace DemoGeoServer.Infrastructure.Services
                     };
                 }
 
-                // Get user
                 var user = await _userRepository.GetByIdAsync(tokenEntity.UserId);
                 if (user == null)
                 {
@@ -125,22 +123,16 @@ namespace DemoGeoServer.Infrastructure.Services
                     };
                 }
 
-                // Generate new tokens
                 var newAccessToken = _tokenService.GenerateToken(user);
-                var newRefreshToken = _tokenService.GenerateRefreshToken();
                 var expiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.DurationInMinutes);
 
-                // Update refresh token in database
-                tokenEntity.Token = newRefreshToken;
-                tokenEntity.ExpiryDate = DateTime.UtcNow.AddDays(7);
-                tokenEntity.UpdatedAt = DateTime.UtcNow;
-                await _refreshTokenRepository.UpdateAsync(tokenEntity);
+                await _refreshTokenRepository.UpdateTimestampAsync(tokenEntity.Id);
 
                 return new LoginResponse
                 {
                     Success = true,
                     Token = newAccessToken,
-                    RefreshToken = newRefreshToken,
+                    RefreshToken = refreshToken,
                     ExpiresAt = expiresAt,
                     Message = "Token refreshed successfully"
                 };
@@ -155,12 +147,26 @@ namespace DemoGeoServer.Infrastructure.Services
             }
         }
 
-        public async Task<bool> LogoutAsync(int userId)
+        public async Task<bool> LogoutAsync(string refreshToken)
         {
             try
             {
-                // Delete all refresh tokens for the user
-                await _refreshTokenRepository.DeleteByUserIdAsync(userId);
+                // Validate refresh token
+                if (string.IsNullOrWhiteSpace(refreshToken))
+                {
+                    return false;
+                }
+
+                // Get the refresh token entity
+                var tokenEntity = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+                
+                if (tokenEntity == null)
+                {
+                    return false;
+                }
+
+                // Delete only this specific refresh token
+                await _refreshTokenRepository.DeleteAsync(tokenEntity.Id);
                 return true;
             }
             catch
@@ -185,7 +191,6 @@ namespace DemoGeoServer.Infrastructure.Services
                     };
                 }
 
-                // Check if user already exists
                 if (await _userRepository.ExistsAsync(request.Username, request.Email))
                 {
                     return new RegisterResponse
@@ -195,10 +200,8 @@ namespace DemoGeoServer.Infrastructure.Services
                     };
                 }
 
-                // Hash password
                 var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-                // Create user
                 var user = new User
                 {
                     Username = request.Username,
